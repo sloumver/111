@@ -1,0 +1,46 @@
+from machine import Pin
+import utime
+
+# 添加 ↓
+pinArray = [Pin(2), Pin(1), Pin(0)]
+# 添加 ↑
+# 添加 ↓
+for pin in pinArray:
+    pin.init(Pin.OUT)
+# 添加 ↑
+# 添加 ↓
+def lightSingle(pinID):
+    # 添加 ↓
+    for i in range(len(pinArray)):
+        if(i == pinID):
+            pinArray[i].on()
+        else:
+            pinArray[i].off()
+    # 添加 ↑
+# 添加 ↓
+currentID = 0
+direction = 1
+currentTime = utime.ticks_ms()
+interval = 1000
+
+while 1:
+    # 添加 ↓
+    if(utime.ticks_ms() - currentTime > interval):
+    # 添加 ↑
+        # 调整缩进 ↓
+        lightSingle(currentID)
+
+        currentID = currentID + direction
+
+        if(currentID >= len(pinArray)):
+            direction = -1
+            currentID = len(pinArray) - 2
+
+        elif(currentID < 0):
+            direction = 1
+            currentID = 1
+        # 调整缩进 ↑
+
+        # 添加 ↓
+        currentTime = utime.ticks_ms()
+        # 添加 ↑
