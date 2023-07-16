@@ -1,0 +1,73 @@
+import utime
+
+from machine import I2C, Pin, SPI
+import st7789
+spi = SPI(0, baudrate=40000000, polarity=1, phase=0, bits=8, endia=0, sck=Pin(6), mosi=Pin(8))
+
+display = st7789.ST7789(spi, 240, 240, reset=Pin(11, func=Pin.GPIO, dir=Pin.OUT), dc=Pin(7, func=Pin.GPIO, dir=Pin.OUT))
+
+display.init()
+utime.sleep_ms(40)
+
+i2c = I2C(1, sda=Pin(0), scl=Pin(1), freq=100000)
+
+i2cAddress = i2c.scan()
+
+print(i2cAddress)
+
+i2c.write(i2cAddress[0], bytes(0x71))
+
+data = i2c.read(i2cAddress[0], 1)
+
+print(data)
+
+def displayBinaryString(bArray):
+
+    binStr = ''
+    for b in bArray:
+        oneStr = ''
+
+        tmp = b
+
+        while(tmp != 0):
+            oneStr = oneStr + str(tmp & 0x01)
+
+            tmp = (tmp >> 1)
+
+        if(len(oneStr) != 8):
+            oneStr = oneStr + '0' * (8 - len(oneStr) % 8)
+
+        binStr = binStr + ' ' + ''.join(reversed(oneStr))
+
+    return binStr
+
+print(displayBinaryString(data))
+
+statusBit = (data[0] >> 3) & 1
+
+if(statusBit != 0x01):
+    i2c.write(i2cAddress[0], bytes([0xBE, 0x08, 0x00]))
+
+while 1:
+    i2c.write(i2cAddress[0], bytes([0xAC, 0x33, 0x00]))
+
+    utime.sleep_ms(1000)
+    sensorData = i2c.read(i2cAddress[0], 6)
+
+    while((sensorData[0] >> 7) & 0x01 != 0):
+        utime.sleep_ms(5)
+        sensorData = i2c.read(i2cAddress[0], 6)
+
+    humidity = (sensorData[1] << 12) | (sensorData[2] << 4) | (sensorData[3] >> 4)
+
+    humidity = humidity * 100 / 1048576
+
+    temperature = ((sensorData[3] & 0x0F) << 16) | (sensorData[4] << 8) | sensorData[5]
+    temperature = temperature * 200 / 1048576 - 50
+
+    display.fill(st7789.color565(0,0,0))
+
+    display.draw_string(0, 0, 'Temp: %.2f' % (temperature), color=st7789.color565(66, 133, 244), bg=st7789.color565(66, 133, 244), size=3, vertical=False, rotate=st7789.ROTATE_0, spacing=1)
+
+    display.draw_string(0, 120, 'Humi: %.2f' % (humidity), color=st7789.color565(66, 133, 244), bg=st7789.color565(66, 133, 244), size=3, vertical=False, rotate=st7789.ROTATE_0, spacing=1)
+# 添加 ↑
